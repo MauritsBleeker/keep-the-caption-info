@@ -1,0 +1,2 @@
+--experiment.experiment_name resnet50  --model.image_encoder.tune_from_start True  --model.caption_encoder.tune_from_start True
+--experiment.experiment_name resnet152 --model.image_encoder.tune_from_start True  --model.caption_encoder.tune_from_start True --model.image_encoder resnet152
