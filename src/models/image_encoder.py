@@ -32,9 +32,6 @@ class ImageEncoder(nn.Module):
 
         self.cnn.fc = nn.Sequential()
 
-        if self.config.criterion.name == 'triplet':
-            self.bn = nn.BatchNorm1d(embed_dim)
-
         if init_weights:
             self.fc.init_weights()
             for idx, param in enumerate(self.cnn.parameters()):
@@ -50,9 +47,6 @@ class ImageEncoder(nn.Module):
         pooled = self.avgpool(out_7x7).view(-1, self.cnn_dim)
 
         out = self.fc(pooled)
-
-        if self.config.criterion.name == 'triplet':
-            out = self.bn(out)
 
         out = l2_normalize(out)
 

@@ -37,9 +37,6 @@ class CaptionEncoder(nn.Module):
 
 		self.fc = ProjectionHead(in_features=self.embed_dim, projection_dim=self.embed_dim)
 
-		if self.config.criterion.name == 'triplet':
-			self.bn = nn.BatchNorm1d(self.embed_dim)
-
 		if init_weights:
 			self.init_weights(self.wemb_type, word2idx, self.word_dim, cache_dir=self.config.experiment.cache_dir)
 			self.fc.init_weights()
@@ -104,9 +101,6 @@ class CaptionEncoder(nn.Module):
 		out = torch.gather(padded[0], 1, I).squeeze(1)
 
 		out = self.fc(out)
-
-		if self.config.criterion.name == 'triplet':
-			out = self.bn(out)
 
 		out = l2_normalize(out)
 

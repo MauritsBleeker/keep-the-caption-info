@@ -1,0 +1,65 @@
+dataset:
+    dataset_name: 'f30k'
+    root: '/datasets'
+    train_pickle: 'training_set_ltd.pickle'
+    val_pickle: 'validation_set_ltd.pickle'
+    test_pickle: 'test_set_ltd.pickle'
+    vocab_file: 'f30k_vocab.pkl'
+    captions_per_image: 5
+
+experiment:
+    wandb_project: 'paper_experiments'
+    experiment_name: 'f30k_direct_target'
+    wandb_dir: '/output/f30k/paper_experiments'
+    out_dir:   '/output/f30k/paper_experiments'
+    cache_dir: '/output/wenb'
+
+dataloader:
+    batch_size: 128
+    eval_batch_size: 8
+    num_workers: 10
+    crop_size: 224
+    random_erasing_prob: 0.2
+
+model:
+    name: direct_target
+    embed_dim: 384
+    image_encoder:
+         img_finetune: True
+         cnn_type: resnet50
+         tune_from_start: False
+    caption_encoder:
+        tune_targets: False
+
+
+# optimizer configuration
+optimizer:
+    name: adamp
+    learning_rate: 0.0002
+    weight_decay: 0.0
+    weight_averaging:
+        use_weight_averaging: True
+        checkpoints: 5
+        percentage: 0.9
+
+# lr scheduler configuration
+lr_scheduler:
+    name: cosine_annealing
+    T_max: 30
+    milestones: [15]
+
+# criterion configuration
+criterion:
+    name: 'cosine'
+    tau: 0.05
+
+# detailed training configuration
+train:
+    model_save_path: model_last.pth
+    best_model_save_path: model_best.pth
+    n_epochs: 60
+    finetune_lr_decay: 0.1
+    log_step: 100
+    grad_clip: 2
+    val_epochs: 1
+    use_fp16: False

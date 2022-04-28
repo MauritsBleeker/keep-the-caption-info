@@ -29,7 +29,7 @@ def get_optimizer(optimizer_name, parameters, config, logger=None):
                                  'weight_decay', 'name'}:
             warnings.warn('found unused keys in {}'.format(config.keys()))
         optimizer = AdamP(parameters,
-                          lr=config.learning_rate,
+                          #lr=config.learning_rate,
                           betas=config.get('betas', (0.9, 0.999)),
                           eps=float(config.get('eps', 1e-8)),
                           weight_decay=float(config.get('weight_decay', 0)))
@@ -47,7 +47,6 @@ def get_lr_scheduler(scheduler_name, optimizer, config, logger=None):
 	:param logger:
 	:return:
 	"""
-
 	if logger:
 		logger.log('creating [{}] from Config({})'.format(scheduler_name, config))
 

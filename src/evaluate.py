@@ -57,7 +57,7 @@ class Evaluator(object):
 	@torch.no_grad()
 	def encode_data(self):
 		"""
-		encode the test data
+
 		:return:
 		"""
 
@@ -67,15 +67,14 @@ class Evaluator(object):
 		img_ids = np.zeros((len(self.dataset.caption_ids), 1))
 		cap_ids = np.zeros((len(self.dataset.caption_ids), 1))
 
-		for i, (images, tokens, cap_lengths, targets, caption_ids, image_ids, idx, mask) in enumerate(self.dataloader):
+		for i, (images, targets, caption_ids, image_ids, idx) in enumerate(self.dataloader):
 
-			z_images, z_captions, _ = self.model(
+			z_images, z_caption = self.model(
 				images.to(self.model.img_encoder_device),
-				tokens.to(self.model.cap_encoder_device),
-				cap_lengths
+				targets.to(self.model.cap_encoder_device)
 			)
 
-			caption_representations[idx, :] = z_captions.cpu().numpy().copy()
+			caption_representations[idx, :] = z_caption.cpu().numpy().copy()
 			image_representations[idx, :] = z_images.cpu().numpy().copy()
 			img_ids[idx, :] = np.array(image_ids).reshape(-1, 1)
 			cap_ids[idx, :] = np.array(caption_ids).reshape(-1, 1)
@@ -197,7 +196,6 @@ class Evaluator(object):
 
 	def cxc_i2t(self, image_representations, caption_representations, img_ids, cap_ids):
 		"""
-
 		:param image_representations:
 		:param caption_representations:
 		:param img_ids:
@@ -244,7 +242,6 @@ class Evaluator(object):
 
 	def cxc_t2i(self, image_representations, caption_representations, img_ids, cap_ids):
 		"""
-
 		:param image_representations:
 		:param caption_representations:
 		:param img_ids:
@@ -347,7 +344,6 @@ def main(path_to_model, split='test', data_root=None):
 
 	model = ImageCaptionEncoder(
 		config=config,
-		vocab=vocab,
 		init_weights=False
 	)
 

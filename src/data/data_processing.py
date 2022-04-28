@@ -19,7 +19,6 @@ def process_dataset(json_file, img_folder, dset_name, root, k=5):
 	test_set = defaultdict(dict)
 
 	t = time.time()
-
 	try:
 		for i, image in enumerate(json_file['images']):
 
@@ -84,13 +83,3 @@ def process_dataset(json_file, img_folder, dset_name, root, k=5):
 	pickle.dump(train_set, open(os.path.join(root, 'training_set.pickle'), "wb"))
 	pickle.dump(validation_set, open(os.path.join(root, 'validation_set.pickle'), "wb"))
 	pickle.dump(test_set, open(os.path.join(root, 'test_set.pickle'), "wb"))
-
-
-if __name__ == "__main__":
-
-	json_file = 'annotations/f30k/dataset_flickr30k.json'
-	img_folder = '<folder were the images are stored>'
-	dset_name = 'f30k'
-	root = '<root folder of the images>'
-
-	process_dataset(json_file, img_folder, dset_name, root, k=5)

@@ -6,10 +6,8 @@ from data.dataset import Dataset
 from data.dataset import collate_fn
 from torch.utils.data import DataLoader
 from models.model import ImageCaptionEncoder
+from criterion.target_reconstruction import TargetReconstruction
 from criterion.info_nce import InfoNCE
-from criterion.triplet import Triplet
-from criterion.barlow_twins import BarlowTwinsLoss
-from utils.decoding_loss import DecodingLoss
 import torch.nn as nn
 from evaluate import Evaluator
 try:
@@ -23,23 +21,19 @@ import os
 import logging
 import torch.backends.cudnn as cudnn
 from utils.utils import update_config
+
 from torchcontrib.optim import SWA
 
 
 class Trainer(object):
 
 	def __init__(self, config):
-		"""
-
-		:param config: Config class
-		"""
 
 		self.config = config
 
 		logging.info("Loading {} from: {}".format(
 			self.config.dataset.train_pickle,
-			self.config.dataset.root
-			)
+			self.config.dataset.root)
 		)
 
 		self.trainset = Dataset(
@@ -57,15 +51,12 @@ class Trainer(object):
 			pin_memory=True
 		)
 
-		self.model = ImageCaptionEncoder(vocab=self.trainset.vocab, config=self.config)
+		self.model = ImageCaptionEncoder(config=self.config)
 
-		logging_gradients = [self.model.caption_encoder, self.model.image_encoder]
+		logging_gradients = [self.model.image_encoder]
 
-		if self.config.model.target_decoder.decode_target:
-			if self.config.model.target_decoder.input_decoding:
-				logging_gradients.append(self.model.input_decoder)
-			else:
-				logging_gradients.append(self.model.target_decoder)
+		if self.config.model.caption_encoder.tune_targets:
+			logging_gradients.append(self.model.caption_encoder)
 
 		wandb.watch(
 			logging_gradients,
@@ -74,25 +65,19 @@ class Trainer(object):
 			idx=0
 		)
 
-		assert self.config.criterion.name == 'infonce' or self.config.criterion.name == 'triplet' or self.config.criterion.name == 'barlow'
-
-		if self.config.criterion.name == 'infonce':
-			self.contrastive_criterion = InfoNCE(self.config.criterion.tau)
-		elif self.config.criterion.name == 'triplet':
-			self.contrastive_criterion = Triplet(margin=self.config.criterion.margin, max_violation=True)
-		elif self.config.criterion.name == 'barlow':
-			# not used for paper experiments
-			self.contrastive_criterion = BarlowTwinsLoss(embed_dim=self.config.model.embed_dim, device=self.model.cap_encoder_device)
+		if self.config.model.caption_encoder.tune_targets:
+			self.criterion = InfoNCE(tau=self.config.criterion.tau)
 		else:
-			raise NotImplementedError("Loss is not implemented")
+			self.criterion = TargetReconstruction()
 
-		if self.config.model.target_decoder.decode_target:
+		params = [{'params': self.model.image_encoder.parameters(), 'lr': self.config.optimizer.learning_rate}]
 
-			self.decoding_loss = DecodingLoss(config=self.config)
+		if self.config.model.caption_encoder.tune_targets:
+			params.append({'params': self.model.caption_encoder.parameters(), 'lr': 2e-5})
 
 		self.optimizer = get_optimizer(
 			optimizer_name=self.config.optimizer.name,
-			parameters=self.model.parameters(),
+			parameters=params,
 			config=self.config.optimizer
 		)
 
@@ -119,7 +104,6 @@ class Trainer(object):
 
 	def train(self):
 		"""
-		run training
 
 		:return:
 		"""
@@ -136,7 +120,6 @@ class Trainer(object):
 				rsum = self.evaluator.evaluate(step=self.step)
 
 				if rsum > self.best_score:
-
 					logging.info("Store model in epoch {}".format(epoch))
 					self.best_score = rsum
 					self.store_model(file_name=self.config.train.best_model_save_path)
@@ -165,14 +148,12 @@ class Trainer(object):
 
 				self.model.finetune(
 					image_encoder=self.config.model.image_encoder.img_finetune,
-					caption_encoder=self.config.model.caption_encoder.txt_finetune,
 				)
 
 		self.store_model(file_name=self.config.train.model_save_path)
 
 	def training_epoch(self):
 		"""
-		run one training epoch
 
 		:return:
 		"""
@@ -180,20 +161,19 @@ class Trainer(object):
 		self.start_training()
 
 		if self.config.optimizer.weight_averaging.use_weight_averaging:
-
 			self.weight_average = SWA(
 				self.optimizer,
 				swa_start=int(self.config.optimizer.weight_averaging.percentage * len(self.dataloader)),
 				swa_freq=int(((1 - self.config.optimizer.weight_averaging.percentage) * len(self.dataloader))/self.config.optimizer.weight_averaging.checkpoints)
 			)
 
-		for i, (images, tokens, cap_lengths, targets, caption_ids, image_ids, idx, mask) in enumerate(self.dataloader):
+		for i, (images, targets, caption_ids, image_ids, idx) in enumerate(self.dataloader):
 
-			loss, contrastive_loss, reconstruction_loss = self.iteration(images, tokens, targets, cap_lengths, mask)
+			loss = self.iteration(images, targets)
 
 			if i % self.config.train.log_step == 0:
 
-				self.logging(i=i, loss=loss, contrastive_loss=contrastive_loss, reconstruction_loss=reconstruction_loss)
+				self.logging(i=i, loss=loss)
 
 			self.step += 1
 
@@ -202,54 +182,50 @@ class Trainer(object):
 			logging.info('--- Apply SWA ---')
 			self.weight_average.swap_swa_sgd()
 
-	def iteration(self, images, tokens, targets, cap_lengths, mask=None):
-		"""
-		training iteration
+			logging.info('Epoch: [{0}][{1}/{2}]\t''Loss value: {3}\t'.format(self.epoch, i, len(self.dataloader), loss.data))
+			wandb.log({
+				'epoch': self.epoch,
+				'step': self.step,
+				'loss': loss.data,
+				'lr': self.optimizer.param_groups[0]['lr']
+				}, step=self.step)
 
-		:param images: input images
-		:param tokens: input captions
-		:param targets: caption targets
-		:param cap_lengths: length of each caption
-		:param mask: mask out padding tokens
-		:return: loss, contrastive_loss, reconstruction_loss
+			self.step += 1
+
+	def iteration(self, images, caption_target):
 		"""
+
+		:param images:
+		:param caption_target:
+		:return:
+		"""
+
 		self.optimizer.zero_grad()
 
-		if self.config.recconstruction_constraint.use_constraint:
-			self.decoding_loss.constraint_opt.zero_grad()
-
-		if self.config.model.target_decoder.input_decoding:
-			targets = tokens
-
 		if self.config.train.use_fp16:
-
 			with amp.autocast():
 
-				z_images, z_captions, reconstructions = self.model(
+				z_images, caption_target = self.model(
 					images.to(self.model.img_encoder_device),
-					tokens.to(self.model.cap_encoder_device),
-					cap_lengths,
+					caption_target.to(self.model.cap_encoder_device)
 				)
 
-				loss, contrastive_loss, reconstruction_loss = self.compute_loss(z_images, z_captions, reconstructions, targets, mask)
+				loss = self.compute_loss(z_images, caption_target)
 
 			self.scaler.scale(loss).backward()
-
 		else:
-
-			z_images, z_captions, reconstructions = self.model(
+			z_images, caption_target = self.model(
 				images.to(self.model.img_encoder_device),
-				tokens.to(self.model.cap_encoder_device),
-				cap_lengths
+				caption_target.to(self.model.cap_encoder_device)
 			)
 
-			loss, contrastive_loss, reconstruction_loss = self.compute_loss(z_images, z_captions, reconstructions, targets, mask)
+			loss = self.compute_loss(z_images, caption_target)
 
 			loss.backward()
 
 		self.optimizer_step()
 
-		return loss, contrastive_loss, reconstruction_loss
+		return loss
 
 	def optimizer_step(self):
 		"""
@@ -271,9 +247,6 @@ class Trainer(object):
 			else:
 				self.scaler.step(self.optimizer)
 
-			if self.config.model.target_decoder.decode_target and self.config.recconstruction_constraint.use_constraint:
-				self.scaler.step(self.decoding_loss.constraint_opt)
-
 			self.scaler.update()
 		else:
 			if self.config.optimizer.weight_averaging.use_weight_averaging:
@@ -281,58 +254,24 @@ class Trainer(object):
 			else:
 				self.optimizer.step()
 
-			if self.config.model.target_decoder.decode_target and self.config.recconstruction_constraint.use_constraint:
-				self.decoding_loss.constraint_opt.step()
-
-	def compute_loss(self, z_images, z_captions, reconstructions=None, targets=None, mask=None):
+	def compute_loss(self, z_images, targets):
 		"""
-		compute loss value
 
-		:param z_images: image representations
-		:param z_captions: caption representations
-		:param reconstructions: reconstruction of the caption
+		:param z_images:
 		:param targets:
-		:return: loss, contrastive_loss, reconstruction_loss_value
+		:param targets:
+		:return:
 		"""
 
-		if torch.cuda.device_count() == 2:
+		loss = self.criterion(z_images, targets)
 
-			z_images = z_images.to(self.model.cap_encoder_device)
-			z_captions = z_captions.to(self.model.cap_encoder_device)
+		return loss
 
-			if reconstructions is not None:
-				targets = targets.to(self.model.cap_encoder_device)
-				reconstructions = reconstructions.to(self.model.cap_encoder_device)
-
-				if self.config.model.target_decoder.input_decoding:
-					mask = mask.to(self.model.cap_encoder_device)
-
-		elif torch.cuda.device_count() == 1:
-			targets = targets.to('cuda')
-
-			if self.config.model.target_decoder.input_decoding:
-				mask = mask.to('cuda')
-
-		contrastive_loss = self.contrastive_criterion(z_images, z_captions)
-
-		reconstruction_loss_value = None
-
-		if reconstructions is not None and targets is not None:
-
-			reconstruction_loss, reconstruction_loss_value = self.decoding_loss(reconstructions, targets, mask)
-			loss = reconstruction_loss + contrastive_loss
-
-		else:
-			loss = contrastive_loss
-
-		return loss, contrastive_loss, reconstruction_loss_value
-
-	def logging(self, i, loss, contrastive_loss, reconstruction_loss):
+	def logging(self, i, loss):
 		"""
 
+		:param i
 		:param loss: total loss value
-		:param contrastive_loss:
-		:param reconstruction_loss:
 		:return:
 		"""
 
@@ -347,18 +286,7 @@ class Trainer(object):
 			'lr': self.optimizer.param_groups[0]['lr']
 		}, step=self.step)
 
-		if reconstruction_loss:
-
-			wandb.log({
-				'contrastive_loss': contrastive_loss.data.data,
-				'reconstruction_loss': reconstruction_loss.data,
-			}, step=self.step)
-
-			if self.config.recconstruction_constraint.use_constraint:
-
-				wandb.log({
-					'multiplier': self.decoding_loss.reconstruction_constraint.multiplier.data
-				}, step=self.step)
+		return loss
 
 	def start_training(self):
 		"""
@@ -376,19 +304,13 @@ class Trainer(object):
 		"""
 		self.lr *= decay
 
-		for g in self.optimizer.param_groups:
-			g['lr'] = self.lr
+		self.optimizer.param_groups[0]['lr'] = self.lr
 
 	def store_model(self, file_name):
-		"""
-
-		:param file_name: file name of the stored model
-		:return:
-		"""
 
 		state_dict = {
 			'model': self.model.state_dict(),
-			'criterion': self.contrastive_criterion.state_dict(),
+			'criterion': self.criterion.state_dict(),
 			'optimizer': self.optimizer.state_dict(),
 			'lr_scheduler': self.lr_scheduler.state_dict(),
 			'config': munch.unmunchify(self.config),
@@ -406,12 +328,6 @@ class Trainer(object):
 
 
 def main(yaml_file, **kwargs):
-	"""
-
-	:param yaml_file: config yaml file
-	:param kwargs:
-	:return:
-	"""
 
 	config = Munch.fromYAML(open(yaml_file, 'rb'))
 
@@ -428,7 +344,7 @@ def main(yaml_file, **kwargs):
 		name=config.experiment.experiment_name,
 		dir=config.experiment.wandb_dir,
 		config=munch.unmunchify(config),
-		tags=[config.dataset.dataset_name, 'paper_experiments']
+		tags=[config.dataset.dataset_name, 'paper_experiments', 'direct_target']
 	)
 
 	trainer = Trainer(config=config)

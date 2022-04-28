@@ -1,0 +1,19 @@
+#!/bin/sh
+# The following lines instruct Slurm to allocate one GPU.
+#SBATCH -p gpu
+#SBATCH --gres=gpu:1
+#SBATCH --mem=40gb
+#SBATCH --time=40:00:00
+#SBATCH -o f30k_target_directly_experiment_%A_%a.out
+#SBATCH -c 12
+#SBATCH --array=1-2%2
+
+# Set-up the environment.
+
+
+conda activate image_caption_retrieval
+
+HPARAMS_FILE=$(pwd)/f30k_target_directly_experiment_hyperparams.txt
+
+# Start the experiment.
+python train.py --yaml_file src/configs/f30k/f30k_direct_target_paper.yaml $(head -$SLURM_ARRAY_TASK_ID $HPARAMS_FILE | tail -1)

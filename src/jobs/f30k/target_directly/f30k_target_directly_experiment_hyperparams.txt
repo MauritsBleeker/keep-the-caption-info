@@ -1,0 +1,2 @@
+--experiment.experiment_name swa_f30k_target_direct
+--experiment.experiment_name swa_f30k_tune_targets --model.caption_encoder.tune_targets True
