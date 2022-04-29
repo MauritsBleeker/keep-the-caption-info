@@ -28,7 +28,7 @@ python -c 'import nltk; nltk.download("punkt", download_dir="/downloads")'
 
 For this work, we use the [Flickr30k (F30k)](https://shannon.cs.illinois.edu/DenotationGraph/), and [MS-COCO Captions dataset (COCO)](https://github.com/tylin/coco-caption), including the the [CrissCrossed Captions](https://github.com/google-research-datasets/Crisscrossed-Captions) annotations (CxC).
 
-We store the entire dataset in a pickle file, this to make training faster than loading the images one-by-one from disk. However, this requires a large RAM memory.
+We store the entire dataset in a pickle file to make training faster than loading the images one-by-one from disk. However, this requires a large RAM memory.
 
 Please note that most pre-processing files make use of fixed file path, you have to change this to the locations were you have stored the data/output files. 
 
