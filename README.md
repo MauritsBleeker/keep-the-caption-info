@@ -109,7 +109,7 @@ The hyper-parameters to run the experiments are given in the file `src/jobs/f30k
 
 ## Citation
 
-If you use this code to produce results for your scientific publication, or if you share a copy or fork,
+If you use this code to produce results for your scientific publication, or if you share a copy or fork please cite:
 
 
 ```
