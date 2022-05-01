@@ -3,6 +3,8 @@
 This is the PyTorch code repository for the paper: [Keep the Caption Information: Preventing Shortcut Learning in Contrastive Image-Caption Retrieval](https://arxiv.org/abs/2204.13382), by [Maurits Bleeker](https://mauritsbleeker.github.io)<sup>1</sup>, [Andrew Yates](https://andrewyates.net)<sup>1</sup>, and [Maarten de Rijke](https://staff.fnwi.uva.nl/m.derijke/)<sup>1</sup>.
 The entire project has been developed in Python and PyTorch.
 
+If you have any questions,  please open an issue or send an email: m.j.r.bleeker@uva.nl
+
 <sup>1</sup><sub>University of Amsterdam</sub>
 
 ## Introduction
