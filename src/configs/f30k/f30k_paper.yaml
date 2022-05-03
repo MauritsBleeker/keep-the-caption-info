@@ -10,8 +10,8 @@ dataset:
 experiment:
     wandb_project: 'paper_experiments'
     experiment_name: 'baseline'
-    wandb_dir: '/output/f30k/acm_mm_paper_experiments'
-    out_dir:   '/output/f30k/acm_mm_paper_experiments'
+    wandb_dir: '/output/f30k/paper_experiments'
+    out_dir:   '/output/f30k/paper_experiments'
     cache_dir: '/output/wenb'
 
 dataloader:
