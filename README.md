@@ -113,6 +113,11 @@ If you use this code to produce results for your scientific publication, or if y
 
 
 ```
-
+@article{bleeker2022keep,
+  title={Keep the Caption Information: Preventing Shortcut Learning in Contrastive Image-Caption Retrieval},
+  author={Bleeker, Maurits and Yates, Andrew and de Rijke, Maarten},
+  journal={arXiv preprint arXiv:2204.13382},
+  year={2022}
+}
 ```
 
