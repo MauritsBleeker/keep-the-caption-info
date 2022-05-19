@@ -3,16 +3,15 @@
 This is the PyTorch code repository for the paper: [Keep the Caption Information: Preventing Shortcut Learning in Contrastive Image-Caption Retrieval](https://arxiv.org/abs/2204.13382), by [Maurits Bleeker](https://mauritsbleeker.github.io)<sup>1</sup>, [Andrew Yates](https://andrewyates.net)<sup>1</sup>, and [Maarten de Rijke](https://staff.fnwi.uva.nl/m.derijke/)<sup>1</sup>.
 The entire project has been developed in Python and PyTorch.
 
-If you have any questions, please open an issue or feel free to send an email to m.j.r.bleeker@uva.nl.
+If you have any questions, please file an issue or feel free to send an email to m.j.r.bleeker@uva.nl.
 
 <sup>1</sup><sub>University of Amsterdam</sub>
 
 ## Introduction
 
-The code of this work is mainly based on the code repositories of [PCME](https://github.com/naver-ai/pcme), [VSRR](https://github.com/KunpengLi1994/VSRN), and [VSE++](https://github.com/fartashf/vsepp)  
+The code of this work is mainly based on the code repositories [PCME](https://github.com/naver-ai/pcme), [VSRR](https://github.com/KunpengLi1994/VSRN), and [VSE++](https://github.com/fartashf/vsepp)  
 
-Not all experiments we have run made it into the final version of the paper.
-
+Not all experiments we have run are included in the final version of the paper.
 
 ![alt text](paper/images/overview.png)
 
@@ -37,7 +36,7 @@ Please note that most pre-processing files make use of fixed file path, you have
 ### Data processing
 
 The caption annotations and test/test/val splits for the MS-COCO and Flicker30k dataset can be downloaded [here](http://cs.stanford.edu/people/karpathy/deepimagesent/caption_datasets.zip).
-In the folder `annotations/f30k` we provide the json file of the f30k dataset. The json file of MS-COCO is too big to upload on GitHub. 
+In the folder `annotations/f30k` we provide the json file of the f30k dataset. The json file of MS-COCO is too big to upload to GitHub. 
 
 To generate the pickle file, run the function `process_dataset(json_file, img_folder, dset_name, root, k=5)`,  from the file `data/data_processing.py`.    
 
@@ -83,7 +82,7 @@ All the other hyper parameters can be found in `configs/{coco, f30k}/{coco, f30k
 
 ### Job files
 
-All experiments for the paper has been run on a SLURM based compute cluster.
+All experiments of the paper has been run on a SLURM based compute cluster.
 The job and hyper-parameter files are provided in the folder `jobs/paper_experiments/{coco, f30k}/`.
 
 ## Evaluation
@@ -97,7 +96,7 @@ All model checkpoints that generate the evaluation scores in the paper are avail
 
 ## Paper 
 
-The pre-print of the paper for this work can be found [here](https://arxiv.org/abs/2204.13382). 
+The pre-print of the paper can be found [here](https://arxiv.org/abs/2204.13382). 
 
 In the folder `/paper/plots`, the data and jupyter notebook file is provided to generate the plots in Section 5.3 of the paper.
 
@@ -105,12 +104,11 @@ In the folder `/paper/plots`, the data and jupyter notebook file is provided to 
 
 To run the 'use targets directly/fixed-targets' experiments (Section 5.6 in the paper), please switch to the `fixed-targets` branch. 
 The config files are provided in the folder `src/configs/{f30k, coco}/{f30k, coco}_direct_target_paper.yaml`.
-The hyper-parameters to run the experiments are given in the file `src/jobs/f30k/target_directly/f30k_target_directly_experiment_hyperparams.txt`.
+The hyper-parameters to run the experiments are provided in the file `src/jobs/f30k/target_directly/f30k_target_directly_experiment_hyperparams.txt`.
 
 ## Citation
 
 If you use this code to produce results for your scientific publication, or if you share a copy or fork please cite:
-
 
 ```
 @article{bleeker2022keep,
@@ -120,4 +118,3 @@ If you use this code to produce results for your scientific publication, or if y
   year={2022}
 }
 ```
-
