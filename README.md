@@ -1,9 +1,9 @@
 # Keep the Caption Information: Preventing Shortcut Learning in Contrastive Image-Caption Retrieval
 
-This is the PyTorch code repository for the paper: [Keep the Caption Information: Preventing Shortcut Learning in Contrastive Image-Caption Retrieval](https://arxiv.org/abs/2204.13382), by [Maurits Bleeker](https://mauritsbleeker.github.io)<sup>1</sup>, [Andrew Yates](https://andrewyates.net)<sup>1</sup>, and [Maarten de Rijke](https://staff.fnwi.uva.nl/m.derijke/)<sup>1</sup>.
+This is the PyTorch code repository of the paper: [Keep the Caption Information: Preventing Shortcut Learning in Contrastive Image-Caption Retrieval](https://arxiv.org/abs/2204.13382), by [Maurits Bleeker](https://mauritsbleeker.github.io)<sup>1</sup>, [Andrew Yates](https://andrewyates.net)<sup>1</sup>, and [Maarten de Rijke](https://staff.fnwi.uva.nl/m.derijke/)<sup>1</sup>.
 The entire project has been developed in Python and PyTorch.
 
-If you have any questions, please file an issue or feel free to send an email to m.j.r.bleeker@uva.nl.
+If you have any questions, please open an issue or feel free to send an email to m.j.r.bleeker@uva.nl.
 
 <sup>1</sup><sub>University of Amsterdam</sub>
 
@@ -31,7 +31,7 @@ For this work, we use the [Flickr30k (F30k)](https://shannon.cs.illinois.edu/Den
 
 We store the entire dataset(s) in a pickle file to make training faster (instead of loading the images one-by-one from disk). However, this requires a large RAM memory.
 
-Please note that most pre-processing files make use of fixed file path, you have to change these paths to the locations where you have stored the datasets/output files. 
+Please note that most pre-processing files make use of fixed file path, you have to change these paths to the locations where you have stored the datasets/output files yourself. 
 
 ### Data processing
 
@@ -48,7 +48,7 @@ We provide a pickle file of the MS-COCO and F30k Vocab class used in this work i
 
 ### Adding the CxC annotations
 
-To add the CxC annotations to the pickle files run `notebooks/data_processing/CrissCrossed.ipynb`.
+To add the CxC annotations to the pickle files, run `notebooks/data_processing/CrissCrossed.ipynb`.
 
 ### Targets generator
 
@@ -73,9 +73,9 @@ To train different model configurations, we change the following training hyper 
 - `--recconstruction_constraint.bound`: Lower bound value of the optimization constraint. 
 - `--optimizer.weight_averaging.use_weight_averaging`: Use [Stochastic Weight Averaging](https://pytorch.org/blog/stochastic-weight-averaging-in-pytorch/). 
 - `--model.image_encoder.cnn_type`: The of type of ResNet used for the image encoder backbone. Default is `resnet50`.
-- `--train.n_epochs`: Number of training epcohs. Default value is `60`.
+- `--train.n_epochs`: Number of training epochs. Default value is `60`.
 - `--model.caption_encoder.tune_from_start`: Tune the word embeddings of the caption encoder from the start of the training.
-- `--lr_scheduler.name`: LR schedule used for training. Default is `cosine_annealing`, other option is `multi_step_lr`.
+- `--lr_scheduler.name`: LR schedule used for training. Default is `cosine_annealing`, the other option is `multi_step_lr`.
 - `--lr_scheduler.milestones`: Number of epochs before lowering the lr with factor `finetune_lr_decay`. Only when using `multi_step_lr`.
 
 All the other hyper parameters can be found in `configs/{coco, f30k}/{coco, f30k}_paper.yaml`. However, we did not change any of the other parameters for any experiment in the paper.
@@ -87,7 +87,7 @@ The job and hyper-parameter files are provided in the folder `jobs/paper_experim
 
 ## Evaluation
 
-To run a trained model on the test set run `python evaluate.py --path_to_model <path to model>/model_best.pth`, the run the model with the highest score on the validation set.
+To run a trained model on the test set run `python evaluate.py --path_to_model <path to model>/model_best.pth`, the run the model with the highest evaluation scores on the validation set.
 To use the validation set, add the `--split val` flag. 
 
 ### Model checkpoints
@@ -104,7 +104,7 @@ In the folder `/paper/plots`, the data and jupyter notebook file is provided to 
 
 To run the 'use targets directly/fixed-targets' experiments (Section 5.6 in the paper), please switch to the `fixed-targets` branch. 
 The config files are provided in the folder `src/configs/{f30k, coco}/{f30k, coco}_direct_target_paper.yaml`.
-The hyper-parameters to run the experiments are provided in the file `src/jobs/f30k/target_directly/f30k_target_directly_experiment_hyperparams.txt`.
+The hyper-parameters to run the experiments are provided in the file `src/jobs/{f30k, coco}/target_directly/{f30k, coco}_target_directly_experiment_hyperparams.txt`.
 
 ## Citation
 
